@@ -11,6 +11,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AuthProvider } from "@/hooks/useAuth";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -77,14 +81,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Gomathi Tex — Silk & Cotton Textiles" },
+      {
+        name: "description",
+        content: "Handpicked silk sarees, cotton handlooms, salwar sets and kurtis from Gomathi Tex.",
+      },
+      { name: "author", content: "Gomathi Tex" },
+      { property: "og:title", content: "Gomathi Tex — Silk & Cotton Textiles" },
+      {
+        property: "og:description",
+        content: "Handpicked silk sarees, cotton handlooms, salwar sets and kurtis.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -119,8 +128,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AuthProvider>
+        <div className="flex min-h-screen flex-col">
+          <SiteHeader />
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <main className="flex-1">
+            <Outlet />
+          </main>
+          <SiteFooter />
+        </div>
+        <Toaster position="top-center" richColors />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
