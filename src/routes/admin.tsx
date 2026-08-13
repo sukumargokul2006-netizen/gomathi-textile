@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { inr, useProducts } from "@/lib/shop";
+import { ProductManager } from "@/components/admin/ProductManager";
 
 const STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
 
@@ -123,36 +124,10 @@ function Admin() {
         {orders?.length === 0 ? <p className="text-muted-foreground">No orders yet.</p> : null}
       </div>
 
-      <h2 className="mt-10 text-xl font-semibold">Inventory</h2>
       {lowStock.length > 0 ? (
-        <p className="mt-2 text-sm text-destructive">{lowStock.length} product(s) low on stock.</p>
+        <p className="mt-10 text-sm text-destructive">{lowStock.length} product(s) low on stock.</p>
       ) : null}
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-secondary/60">
-            <tr>
-              <th className="p-3 font-medium">Product</th>
-              <th className="p-3 font-medium">Price</th>
-              <th className="p-3 font-medium">Stock</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(products ?? []).map((p) => (
-              <tr key={p.id} className="border-t border-border">
-                <td className="p-3">{p.name}</td>
-                <td className="p-3">{inr(Number(p.price))}</td>
-                <td className="p-3">
-                  {p.stock < 5 ? (
-                    <Badge variant="destructive">{p.stock}</Badge>
-                  ) : (
-                    <span>{p.stock}</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProductManager />
     </div>
   );
 }
