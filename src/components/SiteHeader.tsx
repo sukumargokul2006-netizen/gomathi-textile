@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, useIsAdmin } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/lib/shop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ export function SiteHeader() {
   const [term, setTerm] = useState("");
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: isAdmin } = useIsAdmin(user?.id);
   const { data: cart } = useCart(user?.id);
   const count = (cart ?? []).reduce((sum, item) => sum + item.quantity, 0);
 
