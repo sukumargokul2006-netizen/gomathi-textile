@@ -99,7 +99,7 @@ export function SiteHeader() {
                 ) : null}
                 <DropdownMenuItem
                   onClick={async () => {
-                    await supabase.auth.signOut();
+                    await signOut();
                     navigate({ to: "/" });
                   }}
                 >
