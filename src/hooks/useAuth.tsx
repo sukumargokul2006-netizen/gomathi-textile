@@ -1,11 +1,28 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export function useAuth() {
+type AuthValue = {
+  session: Session | null;
+  user: User | null;
+  loading: boolean;
+  isAdmin: boolean;
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthValue>({
+  session: null,
+  user: null,
+  loading: true,
+  isAdmin: false,
+  signOut: async () => {},
+});
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
@@ -19,23 +36,40 @@ export function useAuth() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const user: User | null = session?.user ?? null;
-  return { session, user, loading };
-}
+  const user = session?.user ?? null;
 
-export function useIsAdmin(userId?: string) {
-  return useQuery({
-    queryKey: ["is-admin", userId],
-    enabled: !!userId,
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId!)
+        .eq("user_id", user!.id)
         .eq("role", "admin")
         .maybeSingle();
       if (error) throw error;
       return !!data;
     },
   });
+
+  const value = useMemo<AuthValue>(
+    () => ({
+      session,
+      user,
+      loading,
+      isAdmin: !!isAdmin,
+      signOut: async () => {
+        await supabase.auth.signOut();
+        qc.clear();
+      },
+    }),
+    [session, user, loading, isAdmin, qc],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
 }

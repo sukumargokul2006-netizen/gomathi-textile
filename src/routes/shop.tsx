@@ -28,7 +28,7 @@ export const Route = createFileRoute("/shop")({
 function Shop() {
   const { category, q } = Route.useSearch();
   const { data: categories } = useCategories();
-  const { data: products, isLoading } = useProducts({ category, search: q });
+  const { data: products, isLoading } = useProducts({ ...(category ? { category } : {}), ...(q ? { search: q } : {}) });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
