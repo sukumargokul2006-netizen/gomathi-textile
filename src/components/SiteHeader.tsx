@@ -25,7 +25,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [term, setTerm] = useState("");
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { data: cart } = useCart(user?.id);
   const count = (cart ?? []).reduce((sum, item) => sum + item.quantity, 0);
 
