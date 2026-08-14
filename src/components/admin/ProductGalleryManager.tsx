@@ -9,7 +9,7 @@ import { useProductImages, useProductImageMutations } from "@/lib/shop";
 
 const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5;
 
-export function ProductGalleryManager({ productId }: { productId?: string }) {
+export function ProductGalleryManager({ productId }: { productId?: string | undefined }) {
   const { data: images } = useProductImages(productId);
   const { addImage, removeImage, reorder } = useProductImageMutations(productId);
   const [uploading, setUploading] = useState(false);
@@ -53,7 +53,9 @@ export function ProductGalleryManager({ productId }: { productId?: string }) {
     const target = index + dir;
     if (target < 0 || target >= list.length) return;
     const next = [...list];
-    const [item] = next.splice(index, 1);
+    const item = next[index];
+    if (!item) return;
+    next.splice(index, 1);
     next.splice(target, 0, item);
     reorder.mutate(next.map((img, i) => ({ id: img.id, sort_order: i })));
   };
