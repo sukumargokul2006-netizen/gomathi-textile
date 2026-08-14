@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,15 +49,21 @@ function Contact() {
         <ul className="space-y-6 text-sm">
           <li className="flex gap-3">
             <MapPin className="h-5 w-5 shrink-0 text-primary" />
-            <span>112 Weavers Street, Kanchipuram, Tamil Nadu 631502, India</span>
+            <span>New 6th Ward, Kattu Melvannara Street, Tharamangalam, Salem 636502, Tamil Nadu, India</span>
           </li>
           <li className="flex gap-3">
             <Phone className="h-5 w-5 shrink-0 text-primary" />
-            <span>+91 98400 12345 (Mon–Sat, 9am–7pm IST)</span>
+            <a href="tel:+919789119508" className="hover:text-primary">+91 97891 19508</a>
+          </li>
+          <li className="flex gap-3">
+            <MessageCircle className="h-5 w-5 shrink-0 text-primary" />
+            <a href="https://wa.me/918148119508" target="_blank" rel="noreferrer" className="hover:text-primary">
+              WhatsApp +91 81481 19508
+            </a>
           </li>
           <li className="flex gap-3">
             <Mail className="h-5 w-5 shrink-0 text-primary" />
-            <span>care@gomathitex.in</span>
+            <a href="mailto:gomathitex@gmail.com" className="hover:text-primary">gomathitex@gmail.com</a>
           </li>
         </ul>
       </div>

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -32,9 +32,10 @@ export function SiteFooter() {
         <div>
           <h3 className="text-sm font-semibold">Visit the store</h3>
           <ul className="mt-3 space-y-3 text-sm text-muted-foreground">
-            <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-primary" />142, Big Bazaar Street, Coimbatore, TN 641001</li>
-            <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-primary" />+91 98430 11223</li>
-            <li className="flex gap-2"><Mail className="h-4 w-4 shrink-0 text-primary" />care@gomathitex.in</li>
+            <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-primary" />New 6th Ward, Kattu Melvannara Street, Tharamangalam, Salem 636502, Tamil Nadu, India</li>
+            <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-primary" />+91 97891 19508</li>
+            <li className="flex gap-2"><MessageCircle className="h-4 w-4 shrink-0 text-primary" />WhatsApp: +91 81481 19508</li>
+            <li className="flex gap-2"><Mail className="h-4 w-4 shrink-0 text-primary" />gomathitex@gmail.com</li>
           </ul>
         </div>
       </div>
