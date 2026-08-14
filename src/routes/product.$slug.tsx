@@ -68,6 +68,13 @@ function ProductDetail() {
     .filter((p) => p.category_id === product.category_id && p.id !== product.id)
     .slice(0, 4);
 
+  const images: { url: string; alt: string | null }[] = [
+    ...(product.image_url ? [{ url: product.image_url, alt: product.name }] : []),
+    ...(gallery ?? [])
+      .filter((g) => g.image_url !== product.image_url)
+      .map((g) => ({ url: g.image_url, alt: g.alt_text })),
+  ];
+
   const handleAdd = () => {
     if (!user) {
       navigate({ to: "/auth" });
