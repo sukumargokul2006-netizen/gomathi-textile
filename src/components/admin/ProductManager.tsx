@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { inr, useCategories, useProducts, type Product } from "@/lib/shop";
+import { ProductGalleryManager } from "@/components/admin/ProductGalleryManager";
 
 const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5;
 
@@ -88,16 +89,25 @@ export function ProductManager() {
         is_featured: d.is_featured,
         is_new: d.is_new,
       };
-      const { error } = d.id
-        ? await supabase.from("products").update(payload).eq("id", d.id)
-        : await supabase.from("products").insert(payload);
+      if (d.id) {
+        const { error } = await supabase.from("products").update(payload).eq("id", d.id);
+        if (error) throw error;
+        return { id: d.id, created: false };
+      }
+      const { data, error } = await supabase.from("products").insert(payload).select("id").single();
       if (error) throw error;
+      return { id: data.id as string, created: true };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       refresh();
-      setOpen(false);
-      setDraft(emptyDraft);
-      toast.success("Product saved");
+      if (res.created) {
+        setDraft((d) => ({ ...d, id: res.id }));
+        toast.success("Product created — you can now add gallery images");
+      } else {
+        setOpen(false);
+        setDraft(emptyDraft);
+        toast.success("Product saved");
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -248,6 +258,14 @@ export function ProductManager() {
               <div className="flex items-center gap-3">
                 <Switch id="p-new" checked={draft.is_new} onCheckedChange={(v) => set("is_new", v)} />
                 <Label htmlFor="p-new">Mark as new</Label>
+              </div>
+
+              <div className="sm:col-span-2">
+                <Label>Image gallery</Label>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Extra photos shown on the product page alongside the main image.
+                </p>
+                <ProductGalleryManager productId={draft.id} />
               </div>
             </div>
 
