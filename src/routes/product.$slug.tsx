@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
 import { useAuth } from "@/hooks/useAuth";
-import { effectivePrice, inr, useCartMutations, useProduct, useProducts } from "@/lib/shop";
+import { effectivePrice, inr, useCartMutations, useProduct, useProductImages, useProducts } from "@/lib/shop";
 
 export const Route = createFileRoute("/product/$slug")({
   head: ({ params }) => {
@@ -36,6 +36,8 @@ function ProductDetail() {
   const { add } = useCartMutations(user?.id);
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const { data: gallery } = useProductImages(product?.id);
 
   if (isLoading) {
     return (
@@ -83,15 +85,35 @@ function ProductDetail() {
       </nav>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-border bg-muted">
-          {product.image_url ? (
-            <img
-              src={product.image_url}
-              alt={product.name}
-              width={900}
-              height={1100}
-              className="h-full w-full object-cover"
-            />
+        <div>
+          <div className="overflow-hidden rounded-xl border border-border bg-muted">
+            {images.length > 0 ? (
+              <img
+                src={activeImage ?? images[0]!.url}
+                alt={product.name}
+                width={900}
+                height={1100}
+                className="h-full w-full object-cover"
+              />
+            ) : null}
+          </div>
+          {images.length > 1 ? (
+            <div className="mt-3 grid grid-cols-5 gap-3">
+              {images.map((img, i) => {
+                const selected = (activeImage ?? images[0]!.url) === img.url;
+                return (
+                  <button
+                    key={img.url}
+                    type="button"
+                    onClick={() => setActiveImage(img.url)}
+                    aria-label={`View image ${i + 1} of ${product.name}`}
+                    className={`overflow-hidden rounded-md border ${selected ? "border-primary" : "border-border"}`}
+                  >
+                    <img src={img.url} alt={img.alt ?? `${product.name} photo ${i + 1}`} className="aspect-square w-full object-cover" />
+                  </button>
+                );
+              })}
+            </div>
           ) : null}
         </div>
 
