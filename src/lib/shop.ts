@@ -27,6 +27,81 @@ export type Category = {
   sort_order: number;
 };
 
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  image_url: string;
+  alt_text: string | null;
+  sort_order: number;
+};
+
+export function useProductImages(productId?: string) {
+  return useQuery({
+    queryKey: ["product-images", productId],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("*")
+        .eq("product_id", productId!)
+        .order("sort_order");
+      if (error) throw error;
+      return (data ?? []) as ProductImage[];
+    },
+  });
+}
+
+export function useProductImageMutations(productId?: string) {
+  const qc = useQueryClient();
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["product-images", productId] });
+    qc.invalidateQueries({ queryKey: ["products"] });
+  };
+
+  const addImage = useMutation({
+    mutationFn: async ({ url, sortOrder }: { url: string; sortOrder: number }) => {
+      if (!productId) throw new Error("Save the product first");
+      const { error } = await supabase
+        .from("product_images")
+        .insert({ product_id: productId, image_url: url, sort_order: sortOrder });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Image added to gallery");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeImage = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("product_images").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Image removed");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reorder = useMutation({
+    mutationFn: async (rows: { id: string; sort_order: number }[]) => {
+      for (const row of rows) {
+        const { error } = await supabase
+          .from("product_images")
+          .update({ sort_order: row.sort_order })
+          .eq("id", row.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return { addImage, removeImage, reorder };
+}
+
 export const inr = (value: number) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
