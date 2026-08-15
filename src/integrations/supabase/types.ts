@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          entity: string
+          entity_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      banners: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_url: string | null
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -124,44 +190,86 @@ export type Database = {
       orders: {
         Row: {
           address_line: string
+          billing_address_line: string | null
+          billing_city: string | null
+          billing_country: string | null
+          billing_pincode: string | null
+          billing_state: string | null
           city: string
+          country: string
           created_at: string
+          discount: number
           email: string
           full_name: string
           id: string
+          notes: string | null
+          payment_method: string
+          payment_status: string
           phone: string
           pincode: string
+          shipping_cost: number
           state: string
           status: string
+          subtotal: number
           total: number
+          transaction_ref: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           address_line: string
+          billing_address_line?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_pincode?: string | null
+          billing_state?: string | null
           city: string
+          country?: string
           created_at?: string
+          discount?: number
           email: string
           full_name: string
           id?: string
+          notes?: string | null
+          payment_method?: string
+          payment_status?: string
           phone: string
           pincode: string
+          shipping_cost?: number
           state: string
           status?: string
+          subtotal?: number
           total?: number
+          transaction_ref?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           address_line?: string
+          billing_address_line?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_pincode?: string | null
+          billing_state?: string | null
           city?: string
+          country?: string
           created_at?: string
+          discount?: number
           email?: string
           full_name?: string
           id?: string
+          notes?: string | null
+          payment_method?: string
+          payment_status?: string
           phone?: string
           pincode?: string
+          shipping_cost?: number
           state?: string
           status?: string
+          subtotal?: number
           total?: number
+          transaction_ref?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -281,6 +389,24 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string | null
         }
         Relationships: []
       }

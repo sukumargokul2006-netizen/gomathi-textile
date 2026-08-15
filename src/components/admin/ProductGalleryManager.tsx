@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProductImages, useProductImageMutations } from "@/lib/shop";
-
-const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5;
+import { uploadProductImage } from "@/lib/admin";
 
 export function ProductGalleryManager({ productId }: { productId?: string | undefined }) {
   const { data: images } = useProductImages(productId);
@@ -29,17 +27,8 @@ export function ProductGalleryManager({ productId }: { productId?: string | unde
     try {
       let next = list.length;
       for (const file of files) {
-        const ext = file.name.split(".").pop() ?? "jpg";
-        const path = `${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage
-          .from("product-images")
-          .upload(path, file, { upsert: true, contentType: file.type });
-        if (error) throw error;
-        const { data, error: signErr } = await supabase.storage
-          .from("product-images")
-          .createSignedUrl(path, SIGNED_URL_TTL);
-        if (signErr) throw signErr;
-        await addImage.mutateAsync({ url: data.signedUrl, sortOrder: next });
+        const url = await uploadProductImage(file);
+        await addImage.mutateAsync({ url, sortOrder: next });
         next += 1;
       }
     } catch (e) {
@@ -68,7 +57,7 @@ export function ProductGalleryManager({ productId }: { productId?: string | unde
           <Input
             id="p-gallery"
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
             multiple
             disabled={uploading}
             onChange={(e) => {
