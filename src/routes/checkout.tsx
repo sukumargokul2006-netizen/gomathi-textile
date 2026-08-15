@@ -63,7 +63,17 @@ function Checkout() {
     try {
       const { data: order, error } = await supabase
         .from("orders")
-        .insert({ ...form, user_id: user.id, total })
+        .insert({
+          ...form,
+          user_id: user.id,
+          country: "India",
+          payment_method: "cod",
+          payment_status: "pending",
+          subtotal,
+          shipping_cost: shipping,
+          discount: 0,
+          total,
+        })
         .select()
         .single();
       if (error) throw error;
