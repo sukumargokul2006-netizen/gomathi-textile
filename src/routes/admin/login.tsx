@@ -27,6 +27,7 @@ function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && user && isAdmin) navigate({ to: "/admin", replace: true });
@@ -42,11 +43,29 @@ function AdminLogin() {
     });
     setBusy(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(error.message === "Invalid login credentials" ? "Email or password is incorrect" : error.message);
       return;
     }
     setPassword("");
     navigate({ to: "/admin", replace: true });
+  };
+
+  const sendPasswordReset = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      toast.error("Enter your admin email first");
+      return;
+    }
+    setResetBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Password reset link sent. Check your email inbox.");
   };
 
   return (
@@ -98,6 +117,15 @@ function AdminLogin() {
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Signing in…" : "Sign in"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            disabled={resetBusy}
+            onClick={() => void sendPasswordReset()}
+          >
+            {resetBusy ? "Sending reset link…" : "Forgot password?"}
           </Button>
         </form>
 
