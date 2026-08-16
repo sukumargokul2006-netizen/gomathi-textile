@@ -38,14 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = session?.user ?? null;
 
-  const { data: isAdmin } = useQuery({
+  const { data: isAdmin, isLoading: roleLoading } = useQuery({
     queryKey: ["is-admin", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
       if (error) throw error;
@@ -57,14 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       user,
-      loading,
+      loading: loading || (!!user && roleLoading),
       isAdmin: !!isAdmin,
       signOut: async () => {
         await supabase.auth.signOut();
         qc.clear();
       },
     }),
-    [session, user, loading, isAdmin, qc],
+    [session, user, loading, roleLoading, isAdmin, qc],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
