@@ -15,12 +15,12 @@ export const Route = createFileRoute("/about")({
 function About() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="text-4xl font-semibold">Woven with care since 1972</h1>
+      <h1 className="text-4xl font-semibold">Woven with care since 2006</h1>
       <div className="mt-8 space-y-5 text-muted-foreground">
         <p>
           Gomathi Tex began as a single handloom in a small Tamil Nadu town. Today we work with
-          more than eighty weaver families across Kanchipuram, Chettinad and Coimbatore, bringing
-          their craft directly to your wardrobe.
+          more than eighty weaver families across Salem, Tharamangalam, Elampillai and Coimbatore,
+          bringing their craft directly to your wardrobe.
         </p>
         <p>
           Every saree is inspected by hand. We publish honest fabric details, keep our margins
@@ -33,7 +33,7 @@ function About() {
       </div>
       <dl className="mt-12 grid gap-8 sm:grid-cols-3">
         {[
-          ["50+", "Years of weaving"],
+          ["25+", "Years of weaving"],
           ["80+", "Partner weaver families"],
           ["25,000+", "Happy customers"],
         ].map(([n, l]) => (
