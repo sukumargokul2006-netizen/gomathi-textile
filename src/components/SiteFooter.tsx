@@ -1,12 +1,23 @@
 import { Link } from "@tanstack/react-router";
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import logoAsset from "@/assets/gomathi-logo.png.asset.json";
 
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-border bg-secondary/40">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-display text-lg font-semibold text-gradient-emerald">GOMATHI TEX</p>
+          <div className="flex items-center gap-2.5">
+            <img
+              src={logoAsset.url}
+              alt="Gomathi Tex peacock logo"
+              width={40}
+              height={40}
+              loading="lazy"
+              className="h-10 w-10 rounded-full object-contain"
+            />
+            <p className="font-display text-lg font-semibold text-gradient-emerald">GOMATHI TEX</p>
+          </div>
           <p className="mt-3 text-sm text-muted-foreground">
             Handpicked sarees, salwar sets and traditional wear woven with care in Tamil Nadu and
             delivered across India.

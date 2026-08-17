@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import logoAsset from "@/assets/gomathi-logo.png.asset.json";
 
 const links = [
   { to: "/", label: "Home" },
@@ -48,9 +49,18 @@ export function SiteHeader() {
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        <Link to="/" className="mr-2 flex flex-col leading-none">
-          <span className="font-display text-xl font-semibold text-gradient-emerald">GOMATHI TEX</span>
-          <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Since 1978</span>
+        <Link to="/" className="mr-2 flex items-center gap-2.5">
+          <img
+            src={logoAsset.url}
+            alt="Gomathi Tex peacock logo"
+            width={44}
+            height={44}
+            className="h-10 w-10 shrink-0 rounded-full object-contain"
+          />
+          <span className="flex flex-col leading-none">
+            <span className="font-display text-xl font-semibold text-gradient-emerald">GOMATHI TEX</span>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Since 1978</span>
+          </span>
         </Link>
 
         <nav className="hidden flex-1 items-center gap-7 lg:flex">
