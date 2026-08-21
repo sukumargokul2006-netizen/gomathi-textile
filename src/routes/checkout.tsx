@@ -1,13 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { effectivePrice, inr, useCart } from "@/lib/shop";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { checkoutSchema, lookupPincode, sanitize } from "@/lib/checkout-validation";
+import { placeOrder as placeOrderFn } from "@/lib/orders.functions";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -21,21 +23,84 @@ export const Route = createFileRoute("/checkout")({
   component: Checkout,
 });
 
+type FormState = {
+  full_name: string;
+  email: string;
+  phone: string;
+  address_line: string;
+  pincode: string;
+  city: string;
+  state: string;
+};
+
+const empty: FormState = {
+  full_name: "",
+  email: "",
+  phone: "",
+  address_line: "",
+  pincode: "",
+  city: "",
+  state: "",
+};
+
+/** Keystroke-level filters so bad characters never enter the field at all. */
+const masks: Partial<Record<keyof FormState, (v: string) => string>> = {
+  full_name: (v) => v.replace(/[^A-Za-z .]/g, "").slice(0, 60),
+  phone: (v) => v.replace(/\D/g, "").slice(0, 10),
+  pincode: (v) => v.replace(/\D/g, "").slice(0, 6),
+  city: (v) => v.replace(/[^A-Za-z .()-]/g, "").slice(0, 60),
+  state: (v) => v.replace(/[^A-Za-z .()-]/g, "").slice(0, 60),
+  email: (v) => v.replace(/\s/g, "").slice(0, 255),
+  address_line: (v) => v.replace(/[<>]/g, "").slice(0, 200),
+};
+
+function fieldErrors(form: FormState) {
+  const result = checkoutSchema.safeParse(form);
+  if (result.success) return {} as Partial<Record<keyof FormState, string>>;
+  const out: Partial<Record<keyof FormState, string>> = {};
+  for (const issue of result.error.issues) {
+    const key = issue.path[0] as keyof FormState;
+    if (key && !out[key]) out[key] = issue.message;
+  }
+  return out;
+}
+
 function Checkout() {
   const { user, loading } = useAuth();
   const { data: items } = useCart(user?.id);
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const submitOrder = useServerFn(placeOrderFn);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    phone: "",
-    address_line: "",
-    city: "",
-    state: "",
-    pincode: "",
-  });
+  const [pinStatus, setPinStatus] = useState<"idle" | "loading" | "found" | "notfound">("idle");
+  const [touched, setTouched] = useState<Partial<Record<keyof FormState, boolean>>>({});
+  const [form, setForm] = useState<FormState>(empty);
+  const lastPin = useRef("");
+
+  const errors = fieldErrors(form);
+  const isValid = Object.keys(errors).length === 0;
+
+  // Auto-fill city/state as soon as a full 6-digit PIN code is typed.
+  useEffect(() => {
+    if (form.pincode.length !== 6 || lastPin.current === form.pincode) return;
+    lastPin.current = form.pincode;
+    let cancelled = false;
+    setPinStatus("loading");
+    lookupPincode(form.pincode)
+      .then((res) => {
+        if (cancelled) return;
+        if (!res) {
+          setPinStatus("notfound");
+          return;
+        }
+        setPinStatus("found");
+        setForm((f) => ({ ...f, city: res.city, state: res.state }));
+      })
+      .catch(() => !cancelled && setPinStatus("notfound"));
+    return () => {
+      cancelled = true;
+    };
+  }, [form.pincode]);
 
   const subtotal = (items ?? []).reduce(
     (sum, i) => sum + (i.products ? effectivePrice(i.products) * i.quantity : 0),
@@ -53,45 +118,30 @@ function Checkout() {
     );
   }
 
-  const placeOrder = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !items || items.length === 0) {
+    setTouched({
+      full_name: true,
+      email: true,
+      phone: true,
+      address_line: true,
+      pincode: true,
+      city: true,
+      state: true,
+    });
+    if (!isValid) {
+      toast.error("Please correct the highlighted fields");
+      return;
+    }
+    if (!items || items.length === 0) {
       toast.error("Your bag is empty");
       return;
     }
     setSubmitting(true);
     try {
-      const { data: order, error } = await supabase
-        .from("orders")
-        .insert({
-          ...form,
-          user_id: user.id,
-          country: "India",
-          payment_method: "cod",
-          payment_status: "pending",
-          subtotal,
-          shipping_cost: shipping,
-          discount: 0,
-          total,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-
-      const { error: itemsError } = await supabase.from("order_items").insert(
-        items.map((i) => ({
-          order_id: order.id,
-          product_id: i.product_id,
-          product_name: i.products?.name ?? "Item",
-          image_url: i.products?.image_url ?? null,
-          unit_price: i.products ? effectivePrice(i.products) : 0,
-          quantity: i.quantity,
-        })),
-      );
-      if (itemsError) throw itemsError;
-
-      await supabase.from("cart_items").delete().eq("user_id", user.id);
-      qc.invalidateQueries({ queryKey: ["cart", user.id] });
+      const parsed = checkoutSchema.parse(form);
+      await submitOrder({ data: { address: parsed } });
+      qc.invalidateQueries({ queryKey: ["cart", user?.id] });
       toast.success("Order placed successfully!");
       navigate({ to: "/account" });
     } catch (err) {
@@ -101,43 +151,85 @@ function Checkout() {
     }
   };
 
-  const field = (name: keyof typeof form, label: string, type = "text") => (
-    <div>
-      <Label htmlFor={name}>{label}</Label>
-      <Input
-        id={name}
-        type={type}
-        required
-        value={form[name]}
-        onChange={(e) => setForm({ ...form, [name]: e.target.value })}
-        className="mt-1.5"
-      />
-    </div>
-  );
+  const field = (
+    name: keyof FormState,
+    label: string,
+    opts: { type?: string; inputMode?: "text" | "tel" | "numeric" | "email"; hint?: string; autoComplete?: string } = {},
+  ) => {
+    const error = touched[name] ? errors[name] : undefined;
+    return (
+      <div>
+        <Label htmlFor={name}>{label}</Label>
+        <Input
+          id={name}
+          name={name}
+          type={opts.type ?? "text"}
+          inputMode={opts.inputMode}
+          autoComplete={opts.autoComplete}
+          value={form[name]}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${name}-error` : undefined}
+          onBlur={() => setTouched((t) => ({ ...t, [name]: true }))}
+          onChange={(e) => {
+            const mask = masks[name];
+            const next = mask ? mask(e.target.value) : sanitize(e.target.value);
+            setForm((f) => ({ ...f, [name]: next }));
+          }}
+          className={`mt-1.5 ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+        />
+        {error ? (
+          <p id={`${name}-error`} className="mt-1 text-xs text-destructive">{error}</p>
+        ) : opts.hint ? (
+          <p className="mt-1 text-xs text-muted-foreground">{opts.hint}</p>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-3xl font-semibold">Checkout</h1>
-      <form onSubmit={placeOrder} className="mt-8 grid gap-10 lg:grid-cols-[1fr_320px]">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+      <h1 className="text-2xl font-semibold sm:text-3xl">Checkout</h1>
+      <form onSubmit={handleSubmit} noValidate className="mt-6 grid gap-8 lg:grid-cols-[1fr_320px] lg:gap-10">
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Delivery details</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            {field("full_name", "Full name")}
-            {field("phone", "Phone number", "tel")}
+            {field("full_name", "Full name", { autoComplete: "name", hint: "Letters only" })}
+            {field("phone", "Mobile number", {
+              type: "tel",
+              inputMode: "numeric",
+              autoComplete: "tel",
+              hint: "10 digits, starts with 6-9",
+            })}
           </div>
-          {field("email", "Email", "email")}
-          {field("address_line", "Address")}
+          {field("email", "Email", { type: "email", inputMode: "email", autoComplete: "email" })}
           <div className="grid gap-4 sm:grid-cols-3">
-            {field("city", "City")}
-            {field("state", "State")}
-            {field("pincode", "PIN code")}
+            <div>
+              {field("pincode", "PIN code", { inputMode: "numeric", autoComplete: "postal-code" })}
+              {pinStatus === "loading" && (
+                <p className="mt-1 text-xs text-muted-foreground">Looking up PIN code…</p>
+              )}
+              {pinStatus === "found" && (
+                <p className="mt-1 text-xs text-primary">City and state filled automatically</p>
+              )}
+              {pinStatus === "notfound" && form.pincode.length === 6 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Could not find this PIN code — please type city and state.
+                </p>
+              )}
+            </div>
+            {field("city", "City", { autoComplete: "address-level2" })}
+            {field("state", "State", { autoComplete: "address-level1" })}
           </div>
+          {field("address_line", "Address", {
+            autoComplete: "street-address",
+            hint: "House / street / area",
+          })}
           <p className="text-sm text-muted-foreground">
             Payment is collected on delivery. Our team calls to confirm every order.
           </p>
         </div>
 
-        <aside className="h-fit rounded-lg border border-border p-6">
+        <aside className="h-fit rounded-lg border border-border p-4 sm:p-6">
           <h2 className="text-lg font-semibold">Your order</h2>
           <ul className="mt-4 space-y-3 text-sm">
             {(items ?? []).map((i) => (
@@ -158,9 +250,19 @@ function Checkout() {
               <dt>Total</dt><dd>{inr(total)}</dd>
             </div>
           </dl>
-          <Button type="submit" size="lg" className="mt-6 w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            size="lg"
+            className="mt-6 w-full"
+            disabled={submitting || !isValid || !items || items.length === 0}
+          >
             {submitting ? "Placing order..." : "Place order"}
           </Button>
+          {!isValid && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Fill all required fields correctly to place your order.
+            </p>
+          )}
         </aside>
       </form>
     </div>
