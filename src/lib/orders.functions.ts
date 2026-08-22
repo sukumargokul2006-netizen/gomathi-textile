@@ -96,12 +96,18 @@ export const placeOrder = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      await rollback();
+      throw new Error(error.message);
+    }
 
     const { error: itemsError } = await supabase
       .from("order_items")
       .insert(lines.map((l) => ({ ...l, order_id: order.id })));
-    if (itemsError) throw new Error(itemsError.message);
+    if (itemsError) {
+      await rollback();
+      throw new Error(itemsError.message);
+    }
 
     await supabase.from("cart_items").delete().eq("user_id", userId);
 
