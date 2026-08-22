@@ -38,6 +38,13 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (!row.products) throw new Error("A product in your bag is no longer available");
       const quantity = Math.max(1, Math.min(20, Math.trunc(row.quantity)));
       const unit_price = Number(row.products.sale_price ?? row.products.price);
+      if (Number(row.products.stock) < quantity) {
+        throw new Error(
+          Number(row.products.stock) < 1
+            ? `${row.products.name} is out of stock`
+            : `Only ${row.products.stock} left of ${row.products.name}`,
+        );
+      }
       return {
         product_id: row.product_id,
         product_name: row.products.name,

@@ -59,7 +59,7 @@ export function SiteHeader() {
           />
           <span className="flex flex-col leading-none">
             <span className="font-display text-xl font-semibold text-gradient-emerald">GOMATHI TEX</span>
-            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Since 1978</span>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Since 2006</span>
           </span>
         </Link>
 
