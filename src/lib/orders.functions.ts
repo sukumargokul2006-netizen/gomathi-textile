@@ -58,6 +58,29 @@ export const placeOrder = createServerFn({ method: "POST" })
     const shipping_cost = subtotal > 1499 ? 0 : 79;
     const total = subtotal + shipping_cost;
 
+    // Reserve stock atomically before creating the order; roll back on any failure.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const reserved: { product_id: string; quantity: number }[] = [];
+    const rollback = async () => {
+      for (const r of reserved) {
+        await supabaseAdmin.rpc("decrement_product_stock", {
+          _product_id: r.product_id,
+          _qty: -r.quantity,
+        });
+      }
+    };
+    for (const line of lines) {
+      const { error: stockError } = await supabaseAdmin.rpc("decrement_product_stock", {
+        _product_id: line.product_id,
+        _qty: line.quantity,
+      });
+      if (stockError) {
+        await rollback();
+        throw new Error(`${line.product_name} is no longer available in that quantity`);
+      }
+      reserved.push({ product_id: line.product_id, quantity: line.quantity });
+    }
+
     const { data: order, error } = await supabase
       .from("orders")
       .insert({
