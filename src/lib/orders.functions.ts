@@ -38,6 +38,13 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (!row.products) throw new Error("A product in your bag is no longer available");
       const quantity = Math.max(1, Math.min(20, Math.trunc(row.quantity)));
       const unit_price = Number(row.products.sale_price ?? row.products.price);
+      if (Number(row.products.stock) < quantity) {
+        throw new Error(
+          Number(row.products.stock) < 1
+            ? `${row.products.name} is out of stock`
+            : `Only ${row.products.stock} left of ${row.products.name}`,
+        );
+      }
       return {
         product_id: row.product_id,
         product_name: row.products.name,
@@ -50,6 +57,29 @@ export const placeOrder = createServerFn({ method: "POST" })
     const subtotal = lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
     const shipping_cost = subtotal > 1499 ? 0 : 79;
     const total = subtotal + shipping_cost;
+
+    // Reserve stock atomically before creating the order; roll back on any failure.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const reserved: { product_id: string; quantity: number }[] = [];
+    const rollback = async () => {
+      for (const r of reserved) {
+        await supabaseAdmin.rpc("decrement_product_stock", {
+          _product_id: r.product_id,
+          _qty: -r.quantity,
+        });
+      }
+    };
+    for (const line of lines) {
+      const { error: stockError } = await supabaseAdmin.rpc("decrement_product_stock", {
+        _product_id: line.product_id,
+        _qty: line.quantity,
+      });
+      if (stockError) {
+        await rollback();
+        throw new Error(`${line.product_name} is no longer available in that quantity`);
+      }
+      reserved.push({ product_id: line.product_id, quantity: line.quantity });
+    }
 
     const { data: order, error } = await supabase
       .from("orders")
@@ -66,12 +96,18 @@ export const placeOrder = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      await rollback();
+      throw new Error(error.message);
+    }
 
     const { error: itemsError } = await supabase
       .from("order_items")
       .insert(lines.map((l) => ({ ...l, order_id: order.id })));
-    if (itemsError) throw new Error(itemsError.message);
+    if (itemsError) {
+      await rollback();
+      throw new Error(itemsError.message);
+    }
 
     await supabase.from("cart_items").delete().eq("user_id", userId);
 
