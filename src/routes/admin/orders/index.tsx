@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { FileSpreadsheet, Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { inr } from "@/lib/shop";
 import { ORDER_STATUSES, PAYMENT_STATUSES, useAdminOrders, useOrderMutations } from "@/lib/admin";
+import { exportOrdersToExcel } from "@/lib/export-orders";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
