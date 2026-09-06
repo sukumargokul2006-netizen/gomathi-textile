@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { FileSpreadsheet, Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { inr } from "@/lib/shop";
 import { ORDER_STATUSES, PAYMENT_STATUSES, useAdminOrders, useOrderMutations } from "@/lib/admin";
+import { exportOrdersToExcel } from "@/lib/export-orders";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,16 @@ function AdminOrders() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold sm:text-3xl">Orders</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold sm:text-3xl">Orders</h1>
+        <Button
+          onClick={() => exportOrdersToExcel(orders ?? [])}
+          disabled={!orders || orders.length === 0}
+        >
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Download Excel
+        </Button>
+      </div>
 
       <div className="mt-5 flex flex-wrap gap-3">
         <div className="relative min-w-56 flex-1">
