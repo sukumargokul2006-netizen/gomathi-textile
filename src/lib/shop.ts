@@ -185,21 +185,32 @@ export function useCartMutations(userId?: string) {
   const add = useMutation({
     mutationFn: async ({ productId, quantity = 1 }: { productId: string; quantity?: number }) => {
       if (!userId) throw new Error("Please sign in first");
+      const { data: product } = await supabase
+        .from("products")
+        .select("name, stock")
+        .eq("id", productId)
+        .maybeSingle();
+      const stock = Number(product?.stock ?? 0);
+      if (stock < 1) throw new Error(`${product?.name ?? "This item"} is out of stock`);
       const { data: existing } = await supabase
         .from("cart_items")
         .select("id, quantity")
         .eq("product_id", productId)
         .maybeSingle();
       if (existing) {
+        const next = Math.min(existing.quantity + quantity, stock);
+        if (next === existing.quantity) {
+          throw new Error(`Only ${stock} left of ${product?.name ?? "this item"}`);
+        }
         const { error } = await supabase
           .from("cart_items")
-          .update({ quantity: existing.quantity + quantity })
+          .update({ quantity: next })
           .eq("id", existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("cart_items")
-          .insert({ user_id: userId, product_id: productId, quantity });
+          .insert({ user_id: userId, product_id: productId, quantity: Math.min(quantity, stock) });
         if (error) throw error;
       }
     },
@@ -217,12 +228,27 @@ export function useCartMutations(userId?: string) {
         if (error) throw error;
         return;
       }
+      const { data: row } = await supabase
+        .from("cart_items")
+        .select("product_id, products(name, stock)")
+        .eq("id", id)
+        .maybeSingle();
+      const product = (row as { products?: { name: string; stock: number } | null } | null)?.products;
+      const stock = Number(product?.stock ?? 0);
+      if (quantity > stock) {
+        throw new Error(
+          stock < 1
+            ? `${product?.name ?? "This item"} is out of stock`
+            : `Only ${stock} left of ${product?.name ?? "this item"}`,
+        );
+      }
       const { error } = await supabase.from("cart_items").update({ quantity }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: invalidate,
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
