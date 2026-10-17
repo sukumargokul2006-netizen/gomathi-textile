@@ -38,7 +38,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <div className="surface-emerald px-4 py-2 text-center text-xs font-medium tracking-wide">
-        Free shipping across India on orders above {"\u20B9"}1499
+        Free shipping across Tamil Nadu on orders above {"\u20B9"}1499
       </div>
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
         <button
