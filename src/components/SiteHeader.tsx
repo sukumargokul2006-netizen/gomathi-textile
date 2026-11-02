@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import logoAsset from "@/assets/gomathi-logo.png.asset.json";
+import logoAsset from "@/assets/gomathi-tex-logo.jpeg.asset.json";
 
 const links = [
   { to: "/", label: "Home" },

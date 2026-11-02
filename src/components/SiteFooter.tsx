@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
-import logoAsset from "@/assets/gomathi-logo.png.asset.json";
+import logoAsset from "@/assets/gomathi-tex-logo.jpeg.asset.json";
 
 export function SiteFooter() {
   return (
