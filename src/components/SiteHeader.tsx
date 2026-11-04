@@ -117,7 +117,7 @@ export function SiteHeader() {
               </>
             ) : (
               <DropdownMenuItem onClick={() => navigate({ to: "/auth" })}>
-                Sign in / Register
+                Sign in
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
