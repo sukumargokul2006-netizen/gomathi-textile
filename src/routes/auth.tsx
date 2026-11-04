@@ -6,16 +6,17 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign In or Create an Account — Gomathi Tex" },
-      { name: "description", content: "Access your Gomathi Tex account to track orders and save your shopping bag." },
+      { title: "Sign In — Gomathi Tex" },
+      { name: "description", content: "Sign in to your Gomathi Tex account to shop, save your bag and track orders." },
       { property: "og:title", content: "Sign In — Gomathi Tex" },
-      { property: "og:description", content: "Sign in or create your Gomathi Tex account." },
+      { property: "og:description", content: "Sign in with your email and password or your Google account." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,
@@ -27,99 +28,105 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
-    if (user) navigate({ to: "/" });
+    if (user) navigate({ to: "/shop" });
   }, [user, navigate]);
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) toast.error(error.message);
-    else navigate({ to: "/" });
-  };
-
-  const signUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: fullName },
-      },
-    });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Account created. You can sign in now.");
+    if (error) {
+      toast.error(
+        error.message === "Invalid login credentials"
+          ? "Incorrect email or password. Please try again."
+          : error.message,
+      );
+      return;
+    }
+    navigate({ to: "/shop" });
   };
 
   const google = async () => {
+    setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error("Google sign-in failed");
+      setBusy(false);
+      toast.error("Google sign-in failed. Please try again.");
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/" });
+    // Tokens were returned and the session is already set.
+    setBusy(false);
+    const { data } = await supabase.auth.getSession();
+    if (data.session) navigate({ to: "/shop" });
   };
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <h1 className="text-center text-3xl font-semibold">Welcome to Gomathi Tex</h1>
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        Sign in to save your bag and track orders.
+        Sign in to browse our collections, save your bag and track orders.
       </p>
 
-      <Tabs defaultValue="signin" className="mt-8">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="signin">Sign in</TabsTrigger>
-          <TabsTrigger value="signup">Register</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="signin">
-          <form onSubmit={signIn} className="space-y-4 pt-4">
-            <div>
-              <Label htmlFor="si-email">Email</Label>
-              <Input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="si-pass">Password</Label>
-              <Input id="si-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" />
-            </div>
-            <Button type="submit" className="w-full" disabled={busy}>Sign in</Button>
-          </form>
-        </TabsContent>
-
-        <TabsContent value="signup">
-          <form onSubmit={signUp} className="space-y-4 pt-4">
-            <div>
-              <Label htmlFor="su-name">Full name</Label>
-              <Input id="su-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="su-email">Email</Label>
-              <Input id="su-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="su-pass">Password</Label>
-              <Input id="su-pass" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" />
-            </div>
-            <Button type="submit" className="w-full" disabled={busy}>Create account</Button>
-          </form>
-        </TabsContent>
-      </Tabs>
+      <form onSubmit={signIn} className="mt-8 space-y-4">
+        <div>
+          <Label htmlFor="si-email">Email</Label>
+          <Input
+            id="si-email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1.5"
+          />
+        </div>
+        <div>
+          <Label htmlFor="si-pass">Password</Label>
+          <Input
+            id="si-pass"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1.5"
+          />
+        </div>
+        <Button type="submit" className="w-full" disabled={busy}>
+          Sign in
+        </Button>
+        <p className="text-center text-sm">
+          <button
+            type="button"
+            className="text-primary underline-offset-4 hover:underline"
+            onClick={() =>
+              supabase.auth
+                .resetPasswordForEmail(email.trim(), {
+                  redirectTo: `${window.location.origin}/reset-password`,
+                })
+                .then(({ error }) =>
+                  error
+                    ? toast.error(error.message)
+                    : toast.success("Password reset link sent to your email."),
+                )
+            }
+            disabled={!email}
+          >
+            Forgot password?
+          </button>
+        </p>
+      </form>
 
       <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
         <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
       </div>
-      <Button variant="outline" className="w-full" onClick={google}>
+      <Button variant="outline" className="w-full" onClick={google} disabled={busy}>
         Continue with Google
       </Button>
     </div>
