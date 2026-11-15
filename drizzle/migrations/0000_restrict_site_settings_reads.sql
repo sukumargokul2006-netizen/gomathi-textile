@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "settings public read" ON public.site_settings;
