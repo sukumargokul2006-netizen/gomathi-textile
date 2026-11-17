@@ -1,0 +1,2 @@
+- [x] Replace the Sign In page with only name, email, mobile, and direct shopping navigation.
+- [ ] Ensure accepted direct sign-ins can use the existing cart and checkout without identity verification.
