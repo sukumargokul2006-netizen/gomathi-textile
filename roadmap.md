@@ -1,3 +1,3 @@
 - [x] Replace the Sign In page with only name, email, mobile, and direct shopping navigation.
 - [x] Ensure accepted direct sign-ins can use the existing cart and checkout without identity verification.
-- [ ] Confirm the exact valid email for any admin-account change; hold access changes until confirmed.
+- [x] Confirm the exact valid email and verify the account already has admin access; no permission change needed.
