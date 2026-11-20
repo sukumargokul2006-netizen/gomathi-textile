@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [busy, setBusy] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
@@ -47,7 +49,49 @@ function AuthPage() {
       return;
     }
 
-    navigate({ to: "/shop" });
+    setBusy(true);
+    try {
+      let activeUser = user;
+      if (!activeUser) {
+        const { data, error } = await supabase.auth.signInAnonymously({
+          options: {
+            data: {
+              full_name: details.data.fullName,
+              phone: details.data.mobile,
+              contact_email: details.data.email,
+            },
+          },
+        });
+        if (error) throw error;
+        if (!data.user) throw new Error("Could not start your shopping session. Please try again.");
+        activeUser = data.user;
+      } else {
+        const { error } = await supabase.auth.updateUser({
+          data: {
+            full_name: details.data.fullName,
+            phone: details.data.mobile,
+            contact_email: details.data.email,
+          },
+        });
+        if (error) throw error;
+      }
+
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          id: activeUser.id,
+          full_name: details.data.fullName,
+          phone: details.data.mobile,
+        },
+        { onConflict: "id" },
+      );
+      if (profileError) throw profileError;
+
+      navigate({ to: "/shop" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not continue. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -95,8 +139,8 @@ function AuthPage() {
             className="mt-1.5"
           />
         </div>
-        <Button type="submit" className="w-full">
-          Sign In
+        <Button type="submit" className="w-full" disabled={busy}>
+          {busy ? "Please wait…" : "Sign In"}
         </Button>
       </form>
     </div>

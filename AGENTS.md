@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Use anonymous auth sessions for no-verification guest shopping so existing RLS-protected cart and checkout features continue to work; guest details do not establish verified identity.
